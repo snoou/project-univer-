@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fa" dir="ltr"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عملیات ماتریس</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet"> 
+    <style>
+        body {
+            font-family: 'Vazirmatn', 'Inter', sans-serif; /* Prioritized Vazirmatn */
+            background-color: #111827; /* Dark background */
+            color: #e5e7eb; /* Light text */
+        }
+        .matrix-input-grid {
+            display: grid;
+            gap: 0.5rem; /* 8px */
+            margin-top: 1rem; /* 16px */
+            margin-bottom: 1rem; /* 16px */
+            direction: ltr; /* Ensure matrix inputs are LTR */
+        }
+        .matrix-input-grid input {
+            width: 100%;
+            padding: 0.5rem; /* 8px */
+            text-align: center;
+            border: 1px solid #4b5563; /* Darker border */
+            background-color: #1f2937; /* Dark input background */
+            color: #e5e7eb; /* Light input text */
+            border-radius: 0.375rem; /* 6px */
+            box-sizing: border-box; /* Ensure padding and border are included in width */
+        }
+        .result-matrix {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #1f2937;
+            border-radius: 0.5rem;
+            overflow-x: auto; /* Allow horizontal scrolling for large matrices */
+            direction: ltr; /* Ensure result matrix is LTR */
+        }
+        .result-matrix-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .result-matrix-cell {
+            padding: 0.5rem;
+            background-color: #374151;
+            border-radius: 0.25rem;
+            min-width: 40px; /* Minimum width for cells */
+            text-align: center;
+            flex-grow: 1;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            background-color: #4b5563; /* Gray */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+        .error-message {
+            color: #ef4444; /* Red */
+            margin-top: 0.5rem;
+            font-size: 0.875rem; /* 14px */
+        }
+        .section-title {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 700;
+            margin-bottom: 1rem; /* 16px */
+            color: #93c5fd; /* Light blue for titles */
+        }
+        label { /* Default to RTL for labels */
+            display: block;
+            margin-bottom: 0.5rem; /* 8px */
+            font-weight: 500;
+            direction: rtl;
+        }
+        input[type="number"], select {
+            background-color: #1f2937;
+            border: 1px solid #4b5563;
+            color: #e5e7eb;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            direction: rtl; /* Ensure selects and number inputs for dimensions are RTL */
+        }
+        input[type="number"].matrix-input-grid input { /* Override for matrix cells */
+             direction: ltr;
+        }
+
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .rtl-text {
+            direction: rtl;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <div class="container mx-auto max-w-4xl">
+        <h1 class="text-3xl font-bold text-center mb-4 text-blue-300 rtl-text">ابزار عملیات ماتریس</h1>
+        <p class="text-center text-lg text-gray-400 mb-8 rtl-text">استاد : سيد محمد حسيني</p>
+
+        <section id="row-echelon-section" class="mb-12 p-6 bg-gray-800 rounded-lg shadow-xl">
+            <h2 class="section-title rtl-text">۱. تبدیل به فرم پلکانی ردیفی</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="ref-rows" class="rtl-text">تعداد سطرها:</label>
+                    <input type="number" id="ref-rows" min="1" value="3" class="w-full">
+                </div>
+                <div>
+                    <label for="ref-cols" class="rtl-text">تعداد ستون‌ها:</label>
+                    <input type="number" id="ref-cols" min="1" value="3" class="w-full">
+                </div>
+            </div>
+            <button id="create-ref-matrix-btn" class="btn btn-secondary mb-4 w-full sm:w-auto rtl-text">ایجاد ماتریس ورودی</button>
+            
+            <div id="ref-matrix-input-container" class="mb-4">
+                <p class="text-gray-400 rtl-text">لطفاً ابعاد ماتریس را مشخص کرده و دکمه "ایجاد ماتریس ورودی" را بزنید.</p>
+            </div>
+            
+            <button id="calculate-ref-btn" class="btn btn-primary w-full sm:w-auto rtl-text" style="display: none;">محاسبه فرم پلکانی</button>
+            
+            <div id="ref-result-container" class="mt-6">
+                <h3 class="text-lg font-semibold mb-2 text-blue-200 rtl-text">نتیجه (فرم پلکانی ردیفی):</h3>
+                <div id="ref-result-matrix" class="result-matrix">
+                    </div>
+                <p id="ref-error" class="error-message rtl-text"></p>
+            </div>
+        </section>
+
+        <section id="determinant-section" class="p-6 bg-gray-800 rounded-lg shadow-xl">
+            <h2 class="section-title rtl-text">۲. محاسبه دترمینان ماتریس n×n</h2>
+            <div class="mb-4">
+                <label for="det-size" class="rtl-text">اندازه ماتریس (n برای n×n):</label>
+                <input type="number" id="det-size" min="1" value="3" class="w-full sm:w-1/2">
+            </div>
+            <button id="create-det-matrix-btn" class="btn btn-secondary mb-4 w-full sm:w-auto rtl-text">ایجاد ماتریس ورودی</button>
+
+            <div id="det-matrix-input-container" class="mb-4">
+                 <p class="text-gray-400 rtl-text">لطفاً اندازه ماتریس را مشخص کرده و دکمه "ایجاد ماتریس ورودی" را بزنید.</p>
+            </div>
+
+            <div id="det-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4" style="display: none;">
+                <div dir="rtl"> 
+                    <label for="det-expansion-type" class="rtl-text">بسط حول:</label>
+                    <select id="det-expansion-type" class="w-full">
+                        <option value="row">سطر</option>
+                        <option value="column">ستون</option>
+                    </select>
+                </div>
+                <div dir="rtl"> 
+                    <label for="det-expansion-index" class="rtl-text">شماره سطر/ستون (شروع از ۱):</label>
+                    <input type="number" id="det-expansion-index" min="1" value="1" class="w-full">
+                </div>
+            </div>
+            
+            <button id="calculate-det-btn" class="btn btn-primary w-full sm:w-auto rtl-text" style="display: none;">محاسبه دترمینان</button>
+            
+            <div id="det-result-container" class="mt-6">
+                <h3 class="text-lg font-semibold mb-2 text-blue-200 rtl-text">نتیجه (دترمینان):</h3>
+                <p id="det-result-value" class="text-2xl font-bold text-green-400"></p>
+                <p id="det-error" class="error-message rtl-text"></p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function createMatrixInputFields(rows, cols, containerId, prefix) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+            container.classList.add('matrix-input-grid');
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `${prefix}-cell-${i}-${j}`;
+                    input.placeholder = `عنصر ${i+1},${j+1}`;
+                    input.style.direction = 'ltr'; 
+                    input.setAttribute('aria-label', `Matrix element row ${i+1} column ${j+1}`);
+                    container.appendChild(input);
+                }
+            }
+        }
+
+        function getMatrixFromInputs(rows, cols, prefix) {
+            const matrix = [];
+            for (let i = 0; i < rows; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < cols; j++) {
+                    const inputElement = document.getElementById(`${prefix}-cell-${i}-${j}`);
+                    const value = parseFloat(inputElement.value);
+                    if (isNaN(value)) {
+                        const errorMsgDiv = document.createElement('div');
+                        errorMsgDiv.dir = 'rtl';
+                        errorMsgDiv.textContent = `مقدار نامعتبر در سطر ${i+1}، ستون ${j+1}. لطفاً یک عدد وارد کنید.`;
+                        throw new Error(errorMsgDiv.textContent);
+                    }
+                    matrix[i][j] = value;
+                }
+            }
+            return matrix;
+        }
+
+        function displayMatrix(matrix, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear previous display
+            if (!matrix || matrix.length === 0) {
+                const p = document.createElement('p');
+                p.dir = 'rtl';
+                p.textContent = 'ماتریسی برای نمایش وجود ندارد.';
+                container.appendChild(p);
+                return;
+            }
+            container.style.gridTemplateRows = `repeat(${matrix.length}, auto)`;
+            
+            matrix.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'result-matrix-row'; 
+                row.forEach(cellValue => {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'result-matrix-cell';
+                    cellDiv.textContent = Number(cellValue.toFixed(4)); 
+                    // Numbers are fine as LTR
+                    rowDiv.appendChild(cellDiv);
+                });
+                container.appendChild(rowDiv);
+            });
+        }
+
+        function displayError(message, errorElementId) {
+            const errorEl = document.getElementById(errorElementId);
+            errorEl.textContent = message;
+            errorEl.dir = 'rtl'; 
+        }
+        
+        function clearError(errorElementId) {
+            document.getElementById(errorElementId).textContent = '';
+        }
+
+        const createRefMatrixBtn = document.getElementById('create-ref-matrix-btn');
+        const calculateRefBtn = document.getElementById('calculate-ref-btn');
+        const refRowsInput = document.getElementById('ref-rows');
+        const refColsInput = document.getElementById('ref-cols');
+
+        createRefMatrixBtn.addEventListener('click', () => {
+            try {
+                clearError('ref-error');
+                document.getElementById('ref-result-matrix').innerHTML = '';
+                const rows = parseInt(refRowsInput.value);
+                const cols = parseInt(refColsInput.value);
+                if (isNaN(rows) || isNaN(cols) || rows < 1 || cols < 1) {
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.dir = 'rtl';
+                    errorMsgDiv.textContent = 'تعداد سطرها و ستون‌ها باید اعداد مثبت باشند.';
+                    throw new Error(errorMsgDiv.textContent);
+                }
+                createMatrixInputFields(rows, cols, 'ref-matrix-input-container', 'ref');
+                calculateRefBtn.style.display = 'inline-block';
+            } catch (e) {
+                displayError(e.message, 'ref-error');
+                calculateRefBtn.style.display = 'none';
+            }
+        });
+        
+        calculateRefBtn.addEventListener('click', () => {
+            try {
+                clearError('ref-error');
+                document.getElementById('ref-result-matrix').innerHTML = '';
+                const rows = parseInt(refRowsInput.value);
+                const cols = parseInt(refColsInput.value);
+                const matrix = getMatrixFromInputs(rows, cols, 'ref');
+                const refMatrix = toRowEchelonForm([...matrix.map(row => [...row])]); // Operate on a copy
+                displayMatrix(refMatrix, 'ref-result-matrix');
+            } catch (e) {
+                displayError(e.message, 'ref-error');
+                 document.getElementById('ref-result-matrix').innerHTML = '';
+            }
+        });
+
+        function toRowEchelonForm(matrix) {
+            if (!matrix || matrix.length === 0) return [];
+            let lead = 0;
+            const rowCount = matrix.length;
+            const colCount = matrix[0].length;
+
+            for (let r = 0; r < rowCount; r++) {
+                if (lead >= colCount) {
+                    return matrix;
+                }
+                let i = r;
+                while (i < rowCount && Math.abs(matrix[i][lead]) < 1e-9) { // Use tolerance for zero
+                    i++;
+                }
+                if (i === rowCount) {
+                    lead++;
+                    r--; 
+                    continue;
+                }
+
+                [matrix[i], matrix[r]] = [matrix[r], matrix[i]];
+
+                let val = matrix[r][lead];
+                if (Math.abs(val) > 1e-9) { 
+                    for (let j = 0; j < colCount; j++) {
+                        matrix[r][j] /= val;
+                    }
+                }
+                if (Math.abs(matrix[r][lead]) > 1e-9) matrix[r][lead] = 1;
+
+
+                for (let i = 0; i < rowCount; i++) {
+                    if (i !== r) {
+                        val = matrix[i][lead];
+                        for (let j = 0; j < colCount; j++) {
+                            matrix[i][j] -= val * matrix[r][j];
+                            if (Math.abs(matrix[i][j]) < 1e-9) matrix[i][j] = 0; 
+                        }
+                    }
+                }
+                lead++;
+            }
+            return matrix;
+        }
+
+
+        // --- Determinant Calculation ---
+        const createDetMatrixBtn = document.getElementById('create-det-matrix-btn');
+        const calculateDetBtn = document.getElementById('calculate-det-btn');
+        const detSizeInput = document.getElementById('det-size');
+        const detOptionsContainer = document.getElementById('det-options-container');
+        const detExpansionIndexInput = document.getElementById('det-expansion-index');
+
+
+        createDetMatrixBtn.addEventListener('click', () => {
+            try {
+                clearError('det-error');
+                document.getElementById('det-result-value').textContent = '';
+                const size = parseInt(detSizeInput.value);
+                if (isNaN(size) || size < 1) {
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.dir = 'rtl';
+                    errorMsgDiv.textContent = 'اندازه ماتریس باید یک عدد مثبت باشد.';
+                    throw new Error(errorMsgDiv.textContent);
+                }
+                createMatrixInputFields(size, size, 'det-matrix-input-container', 'det');
+                detExpansionIndexInput.max = size; 
+                calculateDetBtn.style.display = 'inline-block';
+                detOptionsContainer.style.display = 'grid'; 
+            } catch (e) {
+                displayError(e.message, 'det-error');
+                calculateDetBtn.style.display = 'none';
+                detOptionsContainer.style.display = 'none';
+            }
+        });
+
+        calculateDetBtn.addEventListener('click', () => {
+            try {
+                clearError('det-error');
+                document.getElementById('det-result-value').textContent = '';
+                const size = parseInt(detSizeInput.value);
+                const matrix = getMatrixFromInputs(size, size, 'det');
+
+                if (matrix.length !== matrix[0].length) {
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.dir = 'rtl';
+                    errorMsgDiv.textContent = 'دترمینان فقط برای ماتریس‌های مربعی تعریف شده است.';
+                    throw new Error(errorMsgDiv.textContent);
+                }
+
+                const expansionType = document.getElementById('det-expansion-type').value;
+                const expansionIndex = parseInt(document.getElementById('det-expansion-index').value) - 1; // 0-indexed
+
+                if (isNaN(expansionIndex) || expansionIndex < 0 || expansionIndex >= size) {
+                     const errorMsgDiv = document.createElement('div');
+                     errorMsgDiv.dir = 'rtl';
+                     errorMsgDiv.textContent = `شماره ${expansionType === 'row' ? 'سطر' : 'ستون'} برای بسط نامعتبر است. باید بین ۱ و ${size} باشد.`;
+                     throw new Error(errorMsgDiv.textContent);
+                }
+                
+                const det = calculateDeterminant(matrix, expansionType, expansionIndex);
+                document.getElementById('det-result-value').textContent = det.toFixed(4);
+            } catch (e) {
+                displayError(e.message, 'det-error');
+                document.getElementById('det-result-value').textContent = '';
+            }
+        });
+
+        function getSubmatrix(matrix, rowToRemove, colToRemove) {
+            return matrix
+                .filter((_, rowIndex) => rowIndex !== rowToRemove)
+                .map(row => row.filter((_, colIndex) => colIndex !== colToRemove));
+        }
+
+        function calculateDeterminant(matrix, expansionType, expansionIndex) {
+            const n = matrix.length;
+            if (n === 0) return 0; 
+            if (n === 1) return matrix[0][0];
+            
+            if (n === 2) { 
+                return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+            }
+
+            let det = 0;
+            
+            if (expansionType === 'row') {
+                if (expansionIndex < 0 || expansionIndex >= n) {
+                     const errorMsgDiv = document.createElement('div');
+                     errorMsgDiv.dir = 'rtl';
+                     errorMsgDiv.textContent = "شماره سطر برای بسط نامعتبر است.";
+                     throw new Error(errorMsgDiv.textContent);
+                }
+                for (let j = 0; j < n; j++) {
+                    const submatrix = getSubmatrix(matrix, expansionIndex, j);
+                    const cofactorSign = ((expansionIndex + j) % 2 === 0) ? 1 : -1;
+                    det += cofactorSign * matrix[expansionIndex][j] * determinantRecursive(submatrix);
+                }
+            } else { // expansionType === 'column'
+                if (expansionIndex < 0 || expansionIndex >= n) {
+                    const errorMsgDiv = document.createElement('div');
+                    errorMsgDiv.dir = 'rtl';
+                    errorMsgDiv.textContent = "شماره ستون برای بسط نامعتبر است.";
+                    throw new Error(errorMsgDiv.textContent);
+                }
+                for (let i = 0; i < n; i++) {
+                    const submatrix = getSubmatrix(matrix, i, expansionIndex);
+                    const cofactorSign = ((i + expansionIndex) % 2 === 0) ? 1 : -1;
+                    det += cofactorSign * matrix[i][expansionIndex] * determinantRecursive(submatrix);
+                }
+            }
+            return det;
+        }
+
+        function determinantRecursive(matrix) {
+            const n = matrix.length;
+            if (n === 0) return 0;
+            if (n === 1) return matrix[0][0];
+            if (n === 2) return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+
+            let det = 0;
+            for (let j = 0; j < n; j++) { 
+                const submatrix = getSubmatrix(matrix, 0, j);
+                const cofactorSign = (j % 2 === 0) ? 1 : -1;
+                det += cofactorSign * matrix[0][j] * determinantRecursive(submatrix);
+            }
+            return det;
+        }
+
+        window.onload = () => {
+            refRowsInput.value = 3;
+            refColsInput.value = 4;
+            createRefMatrixBtn.click();
+            const refExample = [[1,2,3,4], [0,1,2,3], [2,4,6,8]];
+            for(let i=0; i<Math.min(parseInt(refRowsInput.value) , refExample.length); i++) {
+                for(let j=0; j<Math.min(parseInt(refColsInput.value), refExample[0].length); j++) {
+                    const cell = document.getElementById(`ref-cell-${i}-${j}`);
+                    if(cell && refExample[i] && refExample[i][j] !== undefined) cell.value = refExample[i][j];
+                }
+            }
+
+            detSizeInput.value = 3;
+            createDetMatrixBtn.click();
+            const detExample = [[1,2,3], [4,5,6], [7,8,9]];
+             for(let i=0; i<Math.min(parseInt(detSizeInput.value), detExample.length); i++) {
+                for(let j=0; j<Math.min(parseInt(detSizeInput.value), detExample[0].length); j++) {
+                     const cell = document.getElementById(`det-cell-${i}-${j}`);
+                    if(cell && detExample[i] && detExample[i][j] !== undefined) cell.value = detExample[i][j];
+                }
+            }
+            detExpansionIndexInput.value = 1; 
+        };
+
+    </script>
+</body>
+</html>
